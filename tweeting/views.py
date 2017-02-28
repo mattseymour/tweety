@@ -27,15 +27,21 @@ def get_tweets(response):
     intensive task. This is a prime candidate for DOS of the server this app is
     running on. YOU HAVE BEEN WARNED!
     """
+    try:
+        api = twitter.Api(
+            consumer_key=settings.TWITTER['CONSUMER_KEY'],
+            consumer_secret=settings.TWITTER['CONSUMER_SECRET'],
+            access_token_key=settings.TWITTER['ACCESS_TOKEN'],
+            access_token_secret=settings.TWITTER['ACCESS_TOKEN_SECRET']
+        )
 
-    api = twitter.Api(
-        consumer_key=settings.TWITTER['CONSUMER_KEY'],
-        consumer_secret=settings.TWITTER['CONSUMER_SECRET'],
-        access_token_key=settings.TWITTER['ACCESS_TOKEN'],
-        access_token_secret=settings.TWITTER['ACCESS_TOKEN_SECRET']
-    )
-
-    api.VerifyCredentials()
+        api.VerifyCredentials()
+    except Exception:
+        return HttpResponse(
+            json.dumps({'message': 'Authentication error, check API keys'}),
+            status=418,
+            content_type='application/json'
+        )
 
     # find the newest tweet and get its twitter id. We can use this to limit
     # results from the API and reduce finding duplicates
