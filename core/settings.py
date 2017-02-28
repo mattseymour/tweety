@@ -121,6 +121,13 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'asgiref.inmemory.ChannelLayer',
+        'ROUTING': 'tweeting.routing.channel_routing',
+    }
+}
+
 TWITTER = {
     'CONSUMER_KEY': os.environ.get('TWITTER_CONSUMER'),
     'CONSUMER_SECRET': os.environ.get('TWITTER_SECRET'),
