@@ -8,6 +8,21 @@ from django.http import HttpResponse
 from .models import Tweet
 from .lib import process_tweet
 
+# VIEW: /
+# Main tweeting app entry point
+def index(response):
+    """
+    Simple renders the index.html, we get tweet information from the webservice
+    """
+    return render(
+        response,
+        'index.html',
+        {
+            'account': settings.TWITTER.get('ACCOUNT')
+        }
+    )
+
+
 # VIEW: /get/tweets/
 # Returns 200 or 418 (errors)
 def get_tweets(response):

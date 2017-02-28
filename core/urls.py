@@ -17,9 +17,10 @@ from django.conf.urls import url
 from django.contrib import admin
 
 # keep all the views in core.urls.py we do not have many
-from tweeting.views import get_tweets
+from tweeting.views import get_tweets, index as tweeting_index
 
 urlpatterns = [
+    url(r'^$', tweeting_index),
     url(r'^admin/', admin.site.urls),
     url(r'^get/tweets$', get_tweets),
 ]

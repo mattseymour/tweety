@@ -1,9 +1,264 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Tweeting</title>
+    <title>Tweeting - Latest tweets</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBM1_CUmWcSthSdkpMaXsukksMrIlF9VKU&callback=initMap" async defer></script>
+    <style>
+    html, body {
+      padding: 0;
+      margin: 0;
+      font-family: "Open Sans", Helvetica, Sans;
+      box-sizing: border-box;
+    }
+
+    #map {
+      float: right;
+      width: 65vw;
+      height: 80vh;
+    }
+
+    #tweet-list {
+      list-style-type: none;
+      float: left;
+      width: 30vw;
+      height: 80vh;
+      overflow-y:scroll;
+      overflow-x: hidden;
+      padding: 5px;
+    }
+
+    .tweet {
+      width: 90%;
+      height: auto;
+      border: 1px solid #ccc;
+      border-radius: 15px;
+      padding: 5px;
+      margin-bottom: 10px;
+    }
+
+    .tweet:after {
+      content: "";
+      display: table;
+      clear: both;
+    }
+
+    .tweet span {
+      font-size: 13px;
+    }
+
+    .tweet .mapped {
+      float: left;
+
+    }
+    .tweet .account {
+      float: right;
+    }
+    </style>
   </head>
   <body>
+    <h3>{{ account }}</h3>
+    <div id="debug">
+    </div>
 
+    <div id="map">
+    </div>
+
+    <ul id="tweet-list">
+    </ul>
+
+    <script>
+      let socket = null;
+      let map = null;
+      let infoWindow = null;
+      let tweets = [];
+
+      function reset() {
+
+        // remove all references to the map and the tweet list
+        tweets.forEach((tweet) => {
+          if(tweet.has_marker) {
+            tweet.marker.setMap(null);
+          }
+          document.getElementById('tweet-list').removeChild(document.getElementById(tweet.uid));
+        });
+      }
+
+      function initMap() {
+        // sets up google maps, info window listener and centers map to user location
+        map = new google.maps.Map(
+          document.getElementById('map'),
+          {
+            zoom: 2,
+            center: { lat: 51.379557, lng: -2.358244}
+          }
+        );
+        infoWindow = new google.maps.InfoWindow();
+
+        google.maps.event.addListener(infoWindow, 'closeclick', () => {
+          tweets.forEach((tweet) => {
+            const div = document.getElementById(tweet.uid);
+            div.style.backgroundColor = '#fff';
+          });
+        });
+
+        // Make use of geolocaiton if present
+        if(navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              position = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              };
+              map.setCenter(position);
+            },
+            () => {
+              map.getCenter();
+            }
+          );
+        } else {
+          map.getCenter();
+        }
+
+        setUpSocket();
+      }
+
+      function ping() {
+        clearTimeout
+      }
+
+      function setUpSocket() {
+        // Note that the path doesn't matter right now; any WebSocket
+        // connection gets bumped over to WebSocket consumers
+        console.log('connecting to web socket...')
+        socket = new WebSocket("ws://" + window.location.host + "/tweet/");
+        socket.onmessage = function(e) {
+          // ***** uncomment this to see webservice response *****
+          // const debug_element = document.getElementById('debug');
+          // const textual = document.createElement('p');
+          // textual.innerHTML = e.data;
+          // debug_element.appendChild(textual);
+
+          onMessage(e)
+        }
+        socket.onopen = () => {
+
+        }
+
+        // if we loose connection to the service then retry setting up the
+        // connection in 10 seconds time.
+        socket.onclose = () => {
+          console.log('lost connection, attempting to reconnect in 10 seconds.')
+          setTimeout(setUpSocket, 10000);
+        }
+        // Call onopen directly if socket is already open
+        if (socket.readyState == WebSocket.OPEN) socket.onopen();
+      }
+
+
+      function onMessage(e) {
+        // When we recieve data remove all old tweets from the map and
+        // regenerate the new set.
+        // We could do something smart with tweet unique id's so we do not need
+        // to add and re-add (something for the future)
+        if(!map) {
+          return;
+        }
+        reset();
+
+        tweets = JSON.parse(e.data);
+        tweets.map((tweet) => {
+          if(!tweet.lng && !tweet.lat) {
+            tweet.has_marker = false;
+            return;
+          }
+          tweet.has_marker = true;
+        });
+
+        // puts tweets on the map
+        onMap()
+        // lists tweets next to the map
+        listTweets()
+      }
+
+
+
+      // lists all the tweets in a ul element on the page
+      function listTweets() {
+
+        const tweet_holder = document.getElementById('tweet-list')
+
+        for(tweet of tweets) {
+          const div = document.createElement('div');
+          div.className = 'tweet';
+          div.id = tweet.uid;
+
+          let htmlString = `<p>${tweet.text}</p><span class="account">${tweet.account}</span>`;
+          // if the tweet has a marker then it will be clickable
+          if(tweet.has_marker) {
+            htmlString = `${htmlString} <span class="mapped">On map</span>`;
+            div.style.cursor = 'pointer';
+          }
+          div.innerHTML = htmlString;
+
+          if(tweet.has_marker) {
+            div.onclick = function() {
+
+              tweets.forEach((tweet) => {
+                if(tweet.uid === this.id) {
+                  infoWindow.setContent(tweet.text);
+                  infoWindow.open(map, tweet.marker);
+                }
+              });
+            }
+          }
+
+
+          tweet_holder.appendChild(div);
+        }
+
+      }
+
+      // for tweets with a long and lat value we can place them on the map
+      function onMap() {
+        let labelIndex = 0;
+        tweets.forEach((tweet) => {
+          // if the tweet has no co-ords then it cannot be mapped
+          if(!tweet.has_marker) {
+            // increment the marker number even if we do not place the marker.
+            // markers will map to tweet index
+            labelIndex = labelIndex + 1;
+            return;
+          }
+
+          const marker = new google.maps.Marker({
+            map: map,
+            label: `${labelIndex}`,
+            position: new google.maps.LatLng(tweet.lat, tweet.lng),
+          });
+          // keep track of the tweet object and marker
+          tweet.marker = marker;
+
+          // markers can be clickable. This will make an infowindow appear above
+          marker.addListener(
+            'click',
+            function(e) {
+              tweets.forEach((tweet) => {
+                const div = document.getElementById(tweet.uid);
+                div.style.backgroundColor = '#fff';
+              });
+
+              infoWindow.setContent(tweet.text);
+              infoWindow.open(map, marker);
+              // highlight the corrisponding tweet in the tweet list
+              document.getElementById(tweet.uid).style.backgroundColor='#ccc';
+            }
+          );
+
+          labelIndex = labelIndex + 1;
+        });
+      }
+
+
+    </script>
   </body>
 </html>
