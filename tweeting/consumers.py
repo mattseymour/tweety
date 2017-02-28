@@ -13,7 +13,7 @@ def tweet_response(tweets):
     """
     Helper: returns tweet results to clients
     """
-    tweets = Tweet.objects.order_by('-id')[:tweets]
+    tweets = reversed(Tweet.objects.order_by('-id')[:tweets])
     response_objects = list(map(lambda x: x.serialized_data(), tweets))
 
     Group('tweety').send({
