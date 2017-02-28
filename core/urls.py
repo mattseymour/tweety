@@ -16,6 +16,10 @@ Including another URLconf
 from django.conf.urls import url
 from django.contrib import admin
 
+# keep all the views in core.urls.py we do not have many
+from tweeting.views import get_tweets
+
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^get/tweets$', get_tweets),
 ]
