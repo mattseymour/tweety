@@ -126,7 +126,7 @@ TWITTER = {
     'CONSUMER_SECRET': os.environ.get('TWITTER_SECRET'),
     'ACCESS_TOKEN': os.environ.get('TWITTER_ACCESS_TOKEN'),
     'ACCESS_TOKEN_SECRET': os.environ.get('TWITTER_ACCESS_TOKEN_SECRET'),
-    'ACCOUNT': '',
+    'ACCOUNT': os.environ.get('TWITTER_ACCOUNT', ''),
     'RESULT_COUNT': 10,
     'POLL_INTERVAL': 10 # in seconds
 }
