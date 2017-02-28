@@ -120,3 +120,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+
+TWITTER = {
+    'CONSUMER_KEY': os.environ.get('TWITTER_CONSUMER'),
+    'CONSUMER_SECRET': os.environ.get('TWITTER_SECRET'),
+    'ACCESS_TOKEN': os.environ.get('TWITTER_ACCESS_TOKEN'),
+    'ACCESS_TOKEN_SECRET': os.environ.get('TWITTER_ACCESS_TOKEN_SECRET'),
+    'ACCOUNT': '',
+    'RESULT_COUNT': 10,
+    'POLL_INTERVAL': 10 # in seconds
+}
+
+if not TWITTER.get('ACCOUNT').startswith('@'):
+    raise ValueError('TWITTER["ACCOUNT"] must start with an @')
